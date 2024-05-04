@@ -22,7 +22,7 @@ namespace rm_serial_driver
 {
 RMSerialDriver::RMSerialDriver(const rclcpp::NodeOptions & options)
 : Node("rm_serial_driver", options),
-  owned_ctx_{new IoContext(2)},
+  owned_ctx_{new IoContext(1)},
   serial_driver_{
     new drivers::serial_driver::SerialDriver(*owned_ctx_),
   },
@@ -230,12 +230,11 @@ void RMSerialDriver::twistStampedEncodeCallback(
   std::array<double, 4> velocities;
   for (int i = 0; i < 4; ++i) {
     velocities[i] = -(vx * cos(angles[i]) + vy * sin(angles[i]) - r * omega * sin(angles[i]));
-    int velocoty_mega = static_cast<int>(std::round(velocities[i] * 10000));
-    *wheel_velocities[i] = std::to_string(velocoty_mega);
+    int velocity_mega = static_cast<int>(std::round(velocities[i] * 10000));
+    *wheel_velocities[i] = std::to_string(velocity_mega);
     // RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %f", i + 1, velocities[i]);
     // RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %s", i + 1, wheel_velocities[i].c_str());
   }
-  // RCLCPP_INFO(this->get_logger(), "calculator has started.");
 
   // RCLCPP_INFO(this->get_logger(), "Wheelvelocity: %s", wheel_msg->wheel_1.c_str());
   wheelVel_queue_.push(wheel_msg);

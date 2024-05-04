@@ -13,7 +13,6 @@
 #include <sensebeetle_interfaces/msg/detail/twist_stamped_to_wheel__struct.hpp>
 #include <serial_driver/serial_driver.hpp>
 #include <std_msgs/msg/float64.hpp>
-#include <std_srvs/srv/trigger.hpp>
 
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "sensebeetle_interfaces/msg/twist_stamped_to_wheel.hpp"

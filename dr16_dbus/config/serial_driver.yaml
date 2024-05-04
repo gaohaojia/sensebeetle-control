@@ -1,0 +1,9 @@
+sl_beetle:
+  rm_serial_driver:
+    ros__parameters:
+      device_name: /dev/ttyUSB0
+      baud_rate: 100000
+      flow_control: none
+      parity: none
+      stop_bits: "1"
+

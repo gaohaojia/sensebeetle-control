@@ -12,24 +12,49 @@ add_definitions(-Wall -Werror)
 ## Export compile commands for clangd
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+#######################
+## Find dependencies ##
+#######################
+
+find_package(ament_cmake_auto REQUIRED)
+
+ament_auto_find_build_dependencies()
 
 
-# find dependencies
-find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+###########
+## Build ##
+###########
+
+ament_auto_add_library(${PROJECT_NAME} SHARED
+  src/dr16_dbus.cpp
+)
+
+rclcpp_components_register_node(${PROJECT_NAME}
+  PLUGIN dr16_dbus::Dr16Dbus
+  EXECUTABLE ${PROJECT_NAME}_node
+)
+
+#############
+## Testing ##
+#############
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  # the following line skips the linter which checks for copyrights
-  # comment the line when a copyright and license is added to all source files
-  set(ament_cmake_copyright_FOUND TRUE)
-  # the following line skips cpplint (only works in a git repo)
-  # comment the line when this package is in a git repo and when
-  # a copyright and license is added to all source files
-  set(ament_cmake_cpplint_FOUND TRUE)
+  list(APPEND AMENT_LINT_AUTO_EXCLUDE
+    ament_cmake_copyright
+    ament_cmake_uncrustify
+  )
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_package()
+
+#############
+## Install ##
+#############
+
+ament_auto_package(
+  INSTALL_TO_SHARE
+  config
+  launch
+)
+
