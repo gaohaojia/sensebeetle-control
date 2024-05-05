@@ -42,7 +42,7 @@ private:
   void unpack();
   void getData(sensebeetle_interfaces::msg::Dr16DbusData dbus_cmd_) const;
 
-  void dbusToTwistStamped();
+  void dbusToTwistStamped(sensebeetle_interfaces::msg::Dr16DbusData dbus_cmd_) const;
 
   // Serial port
   std::unique_ptr<IoContext> owned_ctx_;

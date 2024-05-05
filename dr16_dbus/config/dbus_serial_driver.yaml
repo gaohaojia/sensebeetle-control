@@ -1,5 +1,5 @@
 sl_beetle:
-  rm_serial_driver:
+  dr16_dbus:
     ros__parameters:
       device_name: /dev/ttyUSB0
       baud_rate: 100000

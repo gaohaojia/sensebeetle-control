@@ -7,7 +7,7 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     config = os.path.join(
-        get_package_share_directory('dr16_dbus'), 'config', 'serial_driver.yaml')
+        get_package_share_directory('dr16_dbus'), 'config', 'dbus_serial_driver.yaml')
 
     dr16_dbus_node = Node(
         package='dr16_dbus',

@@ -21,7 +21,7 @@ namespace dr16_dbus
 {
 
 Dr16Dbus::Dr16Dbus(const rclcpp::NodeOptions & options)
-: Node("rm_serial_driver", options),
+: Node("dr16_dbus", options),
   owned_ctx_{new IoContext(1)},
   serial_driver_{
     new drivers::serial_driver::SerialDriver(*owned_ctx_),
@@ -42,7 +42,6 @@ Dr16Dbus::Dr16Dbus(const rclcpp::NodeOptions & options)
     serial_driver_->init_port(device_name_, *device_config_);
     if (!serial_driver_->port()->is_open()) {
       serial_driver_->port()->open();
-      receiveData();
     }
   } catch (const std::exception & ex) {
     RCLCPP_ERROR(
@@ -53,8 +52,8 @@ Dr16Dbus::Dr16Dbus(const rclcpp::NodeOptions & options)
   dbus_thread_ = std::thread([&]() {
     while (rclcpp::ok()) {
       receiveData();
-      getData(dbus_cmd_);
-      dbusToTwistStamped();
+      getData(this->dbus_cmd_);
+      dbusToTwistStamped(this->dbus_cmd_);
     }
   });
 }
@@ -276,9 +275,12 @@ void Dr16Dbus::getData(sensebeetle_interfaces::msg::Dr16DbusData dbus_cmd_) cons
     dbus_cmd_.key_b = (receivedbus.key >> 8) & 0x80 ? true : false;
     if (is_update_) dbus_cmd_.header.stamp = rclcpp::Clock().now();
   }
+  RCLCPP_INFO(
+    this->get_logger(), "%f %f %f %f", dbus_cmd_.ch_r_x, dbus_cmd_.ch_r_y, dbus_cmd_.ch_l_x,
+    dbus_cmd_.ch_l_y);
 }
 
-void Dr16Dbus::dbusToTwistStamped() {}
+void Dr16Dbus::dbusToTwistStamped(sensebeetle_interfaces::msg::Dr16DbusData dbus_cmd_) const {}
 
 }  // namespace dr16_dbus
 #include "rclcpp_components/register_node_macro.hpp"
