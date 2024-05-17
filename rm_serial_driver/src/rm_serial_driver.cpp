@@ -62,11 +62,11 @@ RMSerialDriver::RMSerialDriver(const rclcpp::NodeOptions & options)
   // wheelVel pub thread
   publish_thread_ = std::thread([&]() {
     while (rclcpp::ok()) {
+      // RCLCPP_INFO(get_logger(), "111111111!");
       if (!wheelVel_queue_.empty()) {
         auto msg = wheelVel_queue_.front();
         wheelVel_pub_->publish(*msg);
         wheelVel_queue_.pop();
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
       }
     }
   });
@@ -218,7 +218,12 @@ void RMSerialDriver::twistStampedEncodeCallback(
 
   double vx = msg->twist.linear.x;
   double vy = msg->twist.linear.y;
-  double omega = msg->twist.angular.z;
+  double omega = 0;
+  if (msg->twist.angular.z > 0) {
+    omega = 3 + ((double_t(7) / 1.57) * msg->twist.angular.z);
+  } else if (msg->twist.angular.z < 0) {
+    omega = -3 + ((double_t(7) / 1.57) * msg->twist.angular.z);
+  }
 
   // 四个轮子的角度 (60, 120, 240, 300 度转为弧度)
   std::array<double, 4> angles = {M_PI / 3, 2 * M_PI / 3, 4 * M_PI / 3, 5 * M_PI / 3};
@@ -229,14 +234,21 @@ void RMSerialDriver::twistStampedEncodeCallback(
 
   std::array<double, 4> velocities;
   for (int i = 0; i < 4; ++i) {
-    velocities[i] = -(vx * cos(angles[i]) + vy * sin(angles[i]) - r * omega * sin(angles[i]));
+    if (i > 1) {
+      velocities[i] = -(vx * cos(angles[i]) + vy * sin(angles[i]) + r * omega * sin(angles[i]));
+      // RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %f", i + 1, velocities[i]);
+    } else {
+      velocities[i] = -(vx * cos(angles[i]) + vy * sin(angles[i]) - r * omega * sin(angles[i]));
+    }
+
     int velocity_mega = static_cast<int>(std::round(velocities[i] * 10000));
     *wheel_velocities[i] = std::to_string(velocity_mega);
     // RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %f", i + 1, velocities[i]);
+
     // RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %s", i + 1, wheel_velocities[i].c_str());
   }
 
-  // RCLCPP_INFO(this->get_logger(), "Wheelvelocity: %s", wheel_msg->wheel_1.c_str());
+  RCLCPP_INFO(this->get_logger(), "Wheelvelocity: %s", wheel_msg->wheel_1.c_str());
   wheelVel_queue_.push(wheel_msg);
 }
 
@@ -254,4 +266,5 @@ void RMSerialDriver::removeZeros(std::vector<uint8_t> & data)
 // Register the component with class_loader.
 // This acts as a sort of entry point, allowing the component to be discoverable when its library
 // is being loaded into a running process.
+
 RCLCPP_COMPONENTS_REGISTER_NODE(rm_serial_driver::RMSerialDriver)

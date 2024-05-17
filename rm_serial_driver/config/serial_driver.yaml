@@ -1,9 +1,8 @@
-sl_beetle:
+robot_1:
   rm_serial_driver:
     ros__parameters:
+      flow_control: none
       device_name: /dev/ttyUSB1
       baud_rate: 115200
-      flow_control: none
       parity: none
       stop_bits: "1"
-
