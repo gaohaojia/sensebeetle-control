@@ -22,7 +22,7 @@ namespace rm_serial_driver
 {
 RMSerialDriver::RMSerialDriver(const rclcpp::NodeOptions & options)
 : Node("rm_serial_driver", options),
-  owned_ctx_{new IoContext(1)},
+  owned_ctx_{new IoContext(2)},
   serial_driver_{
     new drivers::serial_driver::SerialDriver(*owned_ctx_),
   },
@@ -216,12 +216,14 @@ void RMSerialDriver::twistStampedEncodeCallback(
 {
   auto wheel_msg = std::make_shared<sensebeetle_interfaces::msg::TwistStampedToWheel>();
 
-  double vx = msg->twist.linear.x;
-  double vy = msg->twist.linear.y;
+  double vx = double_t(3) * msg->twist.linear.x;
+  double vy = double_t(3) * msg->twist.linear.y;
   double omega = 0;
-  if (msg->twist.angular.z > 0) {
+
+  // 0-1.57 映射 3-10
+  if (msg->twist.angular.z > 0.05) {
     omega = 3 + ((double_t(7) / 1.57) * msg->twist.angular.z);
-  } else if (msg->twist.angular.z < 0) {
+  } else if (msg->twist.angular.z < -0.05) {
     omega = -3 + ((double_t(7) / 1.57) * msg->twist.angular.z);
   }
 
@@ -235,20 +237,18 @@ void RMSerialDriver::twistStampedEncodeCallback(
   std::array<double, 4> velocities;
   for (int i = 0; i < 4; ++i) {
     if (i > 1) {
-      velocities[i] = -(vx * cos(angles[i]) + vy * sin(angles[i]) + r * omega * sin(angles[i]));
+      velocities[i] = vy * cos(angles[i]) - vx * sin(angles[i]) - r * omega * sin(angles[i]);
       // RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %f", i + 1, velocities[i]);
     } else {
-      velocities[i] = -(vx * cos(angles[i]) + vy * sin(angles[i]) - r * omega * sin(angles[i]));
+      velocities[i] = vy * cos(angles[i]) - vx * sin(angles[i]) + r * omega * sin(angles[i]);
     }
 
     int velocity_mega = static_cast<int>(std::round(velocities[i] * 10000));
     *wheel_velocities[i] = std::to_string(velocity_mega);
-    // RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %f", i + 1, velocities[i]);
-
-    // RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %s", i + 1, wheel_velocities[i].c_str());
+    RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %f", i + 1, velocities[i]);
   }
 
-  RCLCPP_INFO(this->get_logger(), "Wheelvelocity: %s", wheel_msg->wheel_1.c_str());
+  // RCLCPP_INFO(this->get_logger(), "Wheelvelocity: %s", wheel_msg->wheel_1.c_str());
   wheelVel_queue_.push(wheel_msg);
 }
 
