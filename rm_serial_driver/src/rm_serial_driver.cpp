@@ -101,7 +101,7 @@ void RMSerialDriver::sendData(const sensebeetle_interfaces::msg::TwistStampedToW
       strncpy(send_velocities[i], wheel_velocities[i].c_str(), sizeof(send_velocities[i]) - 1);
       // RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %s", i + 1, send_velocities[i]);
     }
-
+    packet.motor = 1;
     std::vector<uint8_t> data = toVector(packet);
     removeZeros(data);
 
@@ -216,23 +216,22 @@ void RMSerialDriver::twistStampedEncodeCallback(
 {
   auto wheel_msg = std::make_shared<sensebeetle_interfaces::msg::TwistStampedToWheel>();
 
-  double vx = double_t(3) * msg->twist.linear.x;
-  double vy = double_t(3) * msg->twist.linear.y;
-  double omega = 0;
+  double vx = msg->twist.linear.x;
+  double vy = msg->twist.linear.y;
 
-  // 0-1.57 映射 3-10
+  double omega = 0;
   if (msg->twist.angular.z > 0.05) {
-    omega = 3 + ((double_t(7) / 1.57) * msg->twist.angular.z);
+    omega = msg->twist.angular.z;
   } else if (msg->twist.angular.z < -0.05) {
-    omega = -3 + ((double_t(7) / 1.57) * msg->twist.angular.z);
+    omega = msg->twist.angular.z;
   }
 
-  // 四个轮子的角度 (60, 120, 240, 300 度转为弧度)
-  std::array<double, 4> angles = {M_PI / 3, 2 * M_PI / 3, 4 * M_PI / 3, 5 * M_PI / 3};
+  // 四个轮子的角度 (45, 135, 225, 315度转为弧度)
+  std::array<double, 4> angles = {M_PI / 4, 3 * M_PI / 4, 5 * M_PI / 4, 7 * M_PI / 4};
   std::array<std::string *, 4> wheel_velocities{
     &wheel_msg->wheel_1, &wheel_msg->wheel_2, &wheel_msg->wheel_3, &wheel_msg->wheel_4};
 
-  double r = 0.085;  // 轮子到中心的距离，根据你的机器人具体修改
+  double r = 0.080923;  // 轮子到中心的距离，根据你的机器人具体修改
 
   std::array<double, 4> velocities;
   for (int i = 0; i < 4; ++i) {
