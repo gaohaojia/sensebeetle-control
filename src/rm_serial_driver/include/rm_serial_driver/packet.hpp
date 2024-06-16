@@ -30,7 +30,7 @@ struct SendPacket
 {
   // pp0,30000,0,0,\r\n
   uint8_t header[3] = "pp";
-  uint8_t motor = '0';
+  uint8_t motor = '1';
   uint8_t seg_0 = ',';
   char wheel_1[7] = "0";
   uint8_t seg_1 = ',';
