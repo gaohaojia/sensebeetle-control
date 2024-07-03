@@ -13,7 +13,7 @@ def generate_launch_description():
         package='rm_serial_driver',
         executable='rm_serial_driver_node',
         name='rm_serial_driver',
-        namespace='robot_1',
+        namespace='robot_2',
         output='screen',
         emulate_tty=True,
         parameters=[config],

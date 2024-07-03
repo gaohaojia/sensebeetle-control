@@ -101,7 +101,6 @@ void RMSerialDriver::sendData(const sensebeetle_interfaces::msg::TwistStampedToW
       strncpy(send_velocities[i], wheel_velocities[i].c_str(), sizeof(send_velocities[i]) - 1);
       // RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %s", i + 1, send_velocities[i]);
     }
-    packet.motor = 1;
     std::vector<uint8_t> data = toVector(packet);
     removeZeros(data);
 
@@ -221,9 +220,9 @@ void RMSerialDriver::twistStampedEncodeCallback(
 
   double omega = 0;
   if (msg->twist.angular.z > 0.05) {
-    omega = msg->twist.angular.z;
+    omega = static_cast<double>(10 / 1.57) * msg->twist.angular.z;
   } else if (msg->twist.angular.z < -0.05) {
-    omega = msg->twist.angular.z;
+    omega = static_cast<double>(10 / 1.57) * msg->twist.angular.z;
   }
 
   // 四个轮子的角度 (45, 135, 225, 315度转为弧度)
@@ -236,10 +235,10 @@ void RMSerialDriver::twistStampedEncodeCallback(
   std::array<double, 4> velocities;
   for (int i = 0; i < 4; ++i) {
     if (i > 1) {
-      velocities[i] = vy * cos(angles[i]) - vx * sin(angles[i]) + r * omega * sin(angles[i]);
+      velocities[i] = vx * cos(angles[i]) - vy * sin(angles[i]) + r * omega * sin(angles[i]);
       // RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %f", i + 1, velocities[i]);
     } else {
-      velocities[i] = vy * cos(angles[i]) - vx * sin(angles[i]) - r * omega * sin(angles[i]);
+      velocities[i] = vx * cos(angles[i]) - vy * sin(angles[i]) - r * omega * sin(angles[i]);
     }
 
     int velocity_mega = static_cast<int>(std::round(velocities[i] * 1000));

@@ -1,4 +1,4 @@
-robot_1:
+robot_2:
   rm_serial_driver:
     ros__parameters:
       flow_control: none
