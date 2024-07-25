@@ -215,14 +215,23 @@ void RMSerialDriver::twistStampedEncodeCallback(
 {
   auto wheel_msg = std::make_shared<sensebeetle_interfaces::msg::TwistStampedToWheel>();
 
-  double vx = static_cast<double>(10) * msg->twist.linear.x;
-  double vy = static_cast<double>(10) * msg->twist.linear.y;
+  double vx = 0, vy = 0;
+  if (msg->twist.linear.x > 0.05){
+    vx = static_cast<double>(10) * msg->twist.linear.x + 1;
+  } else if (msg->twist.linear.x < -0.05){
+    vx = static_cast<double>(10) * msg->twist.linear.x - 1;
+  }
+  if (msg->twist.linear.y > 0.05){
+    vy = static_cast<double>(10) * msg->twist.linear.y + 1;
+  } else if (msg->twist.linear.y < -0.05){
+    vy = static_cast<double>(10) * msg->twist.linear.y - 1;
+  }
 
   double omega = 0;
   if (msg->twist.angular.z > 0.05) {
-    omega = static_cast<double>(12) * msg->twist.angular.z;
+    omega = msg->twist.angular.z + 0.5;
   } else if (msg->twist.angular.z < -0.05) {
-    omega = static_cast<double>(12) * msg->twist.angular.z;
+    omega = msg->twist.angular.z - 0.5;
   }
 
   // 四个轮子的角度 (45, 135, 225, 315度转为弧度)
@@ -230,15 +239,15 @@ void RMSerialDriver::twistStampedEncodeCallback(
   std::array<std::string *, 4> wheel_velocities{
     &wheel_msg->wheel_1, &wheel_msg->wheel_2, &wheel_msg->wheel_3, &wheel_msg->wheel_4};
 
-  double r = 0.080923;  // 轮子到中心的距离，根据你的机器人具体修改
+  // double r = 0.080923;  // 轮子到中心的距离，根据你的机器人具体修改
 
   std::array<double, 4> velocities;
   for (int i = 0; i < 4; ++i) {
     if (i > 1) {
-      velocities[i] = vx * cos(angles[i]) - vy * sin(angles[i]) + r * omega * sin(angles[i]);
+      velocities[i] = vx * cos(angles[i]) - vy * sin(angles[i]) + omega * sin(angles[i]);
       // RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %f", i + 1, velocities[i]);
     } else {
-      velocities[i] = vx * cos(angles[i]) - vy * sin(angles[i]) - r * omega * sin(angles[i]);
+      velocities[i] = vx * cos(angles[i]) - vy * sin(angles[i]) - omega * sin(angles[i]);
     }
 
     int velocity_mega = static_cast<int>(std::round(velocities[i] * 1000));
