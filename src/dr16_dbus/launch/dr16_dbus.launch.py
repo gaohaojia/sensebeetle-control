@@ -13,7 +13,6 @@ def generate_launch_description():
         package='dr16_dbus',
         executable='dr16_dbus_node',
         name='dr16_dbus',
-        namespace='robot_1',
         output='screen',
         emulate_tty=True,
         parameters=[config],

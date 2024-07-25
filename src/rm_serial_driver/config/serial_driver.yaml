@@ -1,8 +1,7 @@
-robot_2:
-  rm_serial_driver:
-    ros__parameters:
-      flow_control: none
-      device_name: /dev/ttyACM0
-      baud_rate: 115200
-      parity: none
-      stop_bits: "1"
+rm_serial_driver:
+  ros__parameters:
+    flow_control: none
+    device_name: /dev/ttyACM0
+    baud_rate: 115200
+    parity: none
+    stop_bits: "1"
