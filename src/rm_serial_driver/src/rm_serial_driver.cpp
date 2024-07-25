@@ -58,26 +58,10 @@ RMSerialDriver::RMSerialDriver(const rclcpp::NodeOptions & options)
       get_logger(), "Error creating serial port: %s - %s", device_name_.c_str(), ex.what());
     throw ex;
   }
-
-  // wheelVel pub thread
-  publish_thread_ = std::thread([&]() {
-    while (rclcpp::ok()) {
-      // RCLCPP_INFO(get_logger(), "111111111!");
-      if (!wheelVel_queue_.empty()) {
-        auto msg = wheelVel_queue_.front();
-        wheelVel_pub_->publish(*msg);
-        wheelVel_queue_.pop();
-      }
-    }
-  });
 }
 
 RMSerialDriver::~RMSerialDriver()
 {
-  if (receive_thread_.joinable()) {
-    receive_thread_.join();
-  }
-
   if (serial_driver_->port()->is_open()) {
     serial_driver_->port()->close();
   }
@@ -256,7 +240,7 @@ void RMSerialDriver::twistStampedEncodeCallback(
   }
 
   // RCLCPP_INFO(this->get_logger(), "Wheelvelocity: %s", wheel_msg->wheel_1.c_str());
-  wheelVel_queue_.push(wheel_msg);
+  wheelVel_pub_->publish(*wheel_msg);
 }
 
 void RMSerialDriver::removeZeros(std::vector<uint8_t> & data)
