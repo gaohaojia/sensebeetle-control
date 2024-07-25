@@ -22,7 +22,7 @@ namespace rm_serial_driver
 {
 RMSerialDriver::RMSerialDriver(const rclcpp::NodeOptions & options)
 : Node("rm_serial_driver", options),
-  owned_ctx_{new IoContext(2)},
+  owned_ctx_{new IoContext(1)},
   serial_driver_{
     new drivers::serial_driver::SerialDriver(*owned_ctx_),
   },
@@ -201,21 +201,21 @@ void RMSerialDriver::twistStampedEncodeCallback(
 
   double vx = 0, vy = 0;
   if (msg->twist.linear.x > 0.05){
-    vx = static_cast<double>(10) * msg->twist.linear.x + 1;
+    vx = msg->twist.linear.x + 0.2;
   } else if (msg->twist.linear.x < -0.05){
-    vx = static_cast<double>(10) * msg->twist.linear.x - 1;
+    vx = msg->twist.linear.x - 0.2;
   }
   if (msg->twist.linear.y > 0.05){
-    vy = static_cast<double>(10) * msg->twist.linear.y + 1;
+    vy = msg->twist.linear.y + 0.2;
   } else if (msg->twist.linear.y < -0.05){
-    vy = static_cast<double>(10) * msg->twist.linear.y - 1;
+    vy = msg->twist.linear.y - 0.2;
   }
 
   double omega = 0;
   if (msg->twist.angular.z > 0.05) {
-    omega = msg->twist.angular.z + 0.5;
+    omega = msg->twist.angular.z + 1;
   } else if (msg->twist.angular.z < -0.05) {
-    omega = msg->twist.angular.z - 0.5;
+    omega = msg->twist.angular.z - 1;
   }
 
   // 四个轮子的角度 (45, 135, 225, 315度转为弧度)
@@ -228,10 +228,10 @@ void RMSerialDriver::twistStampedEncodeCallback(
   std::array<double, 4> velocities;
   for (int i = 0; i < 4; ++i) {
     if (i > 1) {
-      velocities[i] = vx * cos(angles[i]) - vy * sin(angles[i]) + omega * sin(angles[i]);
+      velocities[i] = static_cast<double>(10) * (vx * cos(angles[i]) - vy * sin(angles[i])) + omega * sin(angles[i]);
       // RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %f", i + 1, velocities[i]);
     } else {
-      velocities[i] = vx * cos(angles[i]) - vy * sin(angles[i]) - omega * sin(angles[i]);
+      velocities[i] = static_cast<double>(10) * (vx * cos(angles[i]) - vy * sin(angles[i])) - omega * sin(angles[i]);
     }
 
     int velocity_mega = static_cast<int>(std::round(velocities[i] * 1000));
