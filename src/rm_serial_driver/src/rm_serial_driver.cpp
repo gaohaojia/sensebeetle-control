@@ -3,6 +3,7 @@
 
 #include <tf2/LinearMath/Quaternion.h>
 
+#include <cmath>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/qos.hpp>
 #include <rclcpp/utilities.hpp>
@@ -199,24 +200,8 @@ void RMSerialDriver::twistStampedEncodeCallback(
 {
   auto wheel_msg = std::make_shared<sensebeetle_interfaces::msg::TwistStampedToWheel>();
 
-  double vx = 0, vy = 0;
-  if (msg->twist.linear.x > 0.05){
-    vx = msg->twist.linear.x + 0.2;
-  } else if (msg->twist.linear.x < -0.05){
-    vx = msg->twist.linear.x - 0.2;
-  }
-  if (msg->twist.linear.y > 0.05){
-    vy = msg->twist.linear.y + 0.2;
-  } else if (msg->twist.linear.y < -0.05){
-    vy = msg->twist.linear.y - 0.2;
-  }
-
-  double omega = 0;
-  if (msg->twist.angular.z > 0.05) {
-    omega = msg->twist.angular.z + 1;
-  } else if (msg->twist.angular.z < -0.05) {
-    omega = msg->twist.angular.z - 1;
-  }
+  double vx = msg->twist.linear.x*10, vy = msg->twist.linear.y*10;
+  double omega = abs(msg->twist.angular.z) > 0.01 ? msg->twist.angular.z : 0;
 
   // 四个轮子的角度 (45, 135, 225, 315度转为弧度)
   std::array<double, 4> angles = {M_PI / 4, 3 * M_PI / 4, 5 * M_PI / 4, 7 * M_PI / 4};
@@ -227,16 +212,13 @@ void RMSerialDriver::twistStampedEncodeCallback(
 
   std::array<double, 4> velocities;
   for (int i = 0; i < 4; ++i) {
-    if (i > 1) {
-      velocities[i] = static_cast<double>(10) * (vx * cos(angles[i]) - vy * sin(angles[i])) + omega * sin(angles[i]);
-      // RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %f", i + 1, velocities[i]);
-    } else {
-      velocities[i] = static_cast<double>(10) * (vx * cos(angles[i]) - vy * sin(angles[i])) - omega * sin(angles[i]);
-    }
-
-    int velocity_mega = static_cast<int>(std::round(velocities[i] * 1000));
+    velocities[i] = vx * cos(angles[i]) - vy * sin(angles[i]) - omega;
+    int sign = velocities[i] >= 0 ? 1 : -1;
+    double value = std::sqrt(abs(velocities[i])) * 1000;
+    if (value != 0) value += 1500;
+    int velocity_mega = static_cast<int>(std::round(sign * value));
     *wheel_velocities[i] = std::to_string(velocity_mega);
-    RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %f", i + 1, velocities[i]);
+    RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %d", i + 1, velocity_mega);
   }
 
   // RCLCPP_INFO(this->get_logger(), "Wheelvelocity: %s", wheel_msg->wheel_1.c_str());
