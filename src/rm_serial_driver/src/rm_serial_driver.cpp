@@ -3,6 +3,7 @@
 
 #include <tf2/LinearMath/Quaternion.h>
 
+#include <cmath>
 #include <rclcpp/logging.hpp>
 #include <rclcpp/qos.hpp>
 #include <rclcpp/utilities.hpp>
@@ -22,7 +23,7 @@ namespace rm_serial_driver
 {
 RMSerialDriver::RMSerialDriver(const rclcpp::NodeOptions & options)
 : Node("rm_serial_driver", options),
-  owned_ctx_{new IoContext(2)},
+  owned_ctx_{new IoContext(1)},
   serial_driver_{
     new drivers::serial_driver::SerialDriver(*owned_ctx_),
   },
@@ -58,26 +59,10 @@ RMSerialDriver::RMSerialDriver(const rclcpp::NodeOptions & options)
       get_logger(), "Error creating serial port: %s - %s", device_name_.c_str(), ex.what());
     throw ex;
   }
-
-  // wheelVel pub thread
-  publish_thread_ = std::thread([&]() {
-    while (rclcpp::ok()) {
-      // RCLCPP_INFO(get_logger(), "111111111!");
-      if (!wheelVel_queue_.empty()) {
-        auto msg = wheelVel_queue_.front();
-        wheelVel_pub_->publish(*msg);
-        wheelVel_queue_.pop();
-      }
-    }
-  });
 }
 
 RMSerialDriver::~RMSerialDriver()
 {
-  if (receive_thread_.joinable()) {
-    receive_thread_.join();
-  }
-
   if (serial_driver_->port()->is_open()) {
     serial_driver_->port()->close();
   }
@@ -215,39 +200,29 @@ void RMSerialDriver::twistStampedEncodeCallback(
 {
   auto wheel_msg = std::make_shared<sensebeetle_interfaces::msg::TwistStampedToWheel>();
 
-  double vx = static_cast<double>(10) * msg->twist.linear.x;
-  double vy = static_cast<double>(10) * msg->twist.linear.y;
-
-  double omega = 0;
-  if (msg->twist.angular.z > 0.05) {
-    omega = static_cast<double>(12) * msg->twist.angular.z;
-  } else if (msg->twist.angular.z < -0.05) {
-    omega = static_cast<double>(12) * msg->twist.angular.z;
-  }
+  double vx = msg->twist.linear.x*10, vy = msg->twist.linear.y*10;
+  double omega = abs(msg->twist.angular.z) > 0.01 ? msg->twist.angular.z : 0;
 
   // 四个轮子的角度 (45, 135, 225, 315度转为弧度)
   std::array<double, 4> angles = {M_PI / 4, 3 * M_PI / 4, 5 * M_PI / 4, 7 * M_PI / 4};
   std::array<std::string *, 4> wheel_velocities{
     &wheel_msg->wheel_1, &wheel_msg->wheel_2, &wheel_msg->wheel_3, &wheel_msg->wheel_4};
 
-  double r = 0.080923;  // 轮子到中心的距离，根据你的机器人具体修改
+  // double r = 0.080923;  // 轮子到中心的距离，根据你的机器人具体修改
 
   std::array<double, 4> velocities;
   for (int i = 0; i < 4; ++i) {
-    if (i > 1) {
-      velocities[i] = vx * cos(angles[i]) - vy * sin(angles[i]) + r * omega * sin(angles[i]);
-      // RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %f", i + 1, velocities[i]);
-    } else {
-      velocities[i] = vx * cos(angles[i]) - vy * sin(angles[i]) - r * omega * sin(angles[i]);
-    }
-
-    int velocity_mega = static_cast<int>(std::round(velocities[i] * 1000));
+    velocities[i] = vx * cos(angles[i]) - vy * sin(angles[i]) - omega;
+    int sign = velocities[i] >= 0 ? 1 : -1;
+    double value = std::sqrt(abs(velocities[i])) * 1000;
+    if (value != 0) value += 1500;
+    int velocity_mega = static_cast<int>(std::round(sign * value));
     *wheel_velocities[i] = std::to_string(velocity_mega);
-    RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %f", i + 1, velocities[i]);
+    RCLCPP_INFO(this->get_logger(), "Wheel %d velocity: %d", i + 1, velocity_mega);
   }
 
   // RCLCPP_INFO(this->get_logger(), "Wheelvelocity: %s", wheel_msg->wheel_1.c_str());
-  wheelVel_queue_.push(wheel_msg);
+  wheelVel_pub_->publish(*wheel_msg);
 }
 
 void RMSerialDriver::removeZeros(std::vector<uint8_t> & data)

@@ -59,9 +59,6 @@ private:
   std::unique_ptr<drivers::serial_driver::SerialPortConfig> device_config_;
   std::unique_ptr<drivers::serial_driver::SerialDriver> serial_driver_;
 
-  std::thread receive_thread_;
-  std::thread publish_thread_;
-
   // subscriber
   rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr twist_sub_;
   rclcpp::Subscription<sensebeetle_interfaces::msg::TwistStampedToWheel>::SharedPtr wheelVel_sub_;
