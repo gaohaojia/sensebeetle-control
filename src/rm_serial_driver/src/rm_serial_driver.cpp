@@ -200,7 +200,7 @@ void RMSerialDriver::twistStampedEncodeCallback(
 {
   auto wheel_msg = std::make_shared<sensebeetle_interfaces::msg::TwistStampedToWheel>();
 
-  double vx = msg->twist.linear.x * 5, vy = msg->twist.linear.y * 5;
+  double vx = msg->twist.linear.x * 2, vy = msg->twist.linear.y * 2;
   double omega = abs(msg->twist.angular.z) > 0.01 ? msg->twist.angular.z : 0;
 
   // 四个轮子的角度 (45, 135, 225, 315度转为弧度)
