@@ -40,7 +40,7 @@ RMSerialDriver::RMSerialDriver(const rclcpp::NodeOptions & options)
 
   // create subscriber
   twist_sub_ = this->create_subscription<geometry_msgs::msg::TwistStamped>(
-    "cmd_vel_pid", custom_qos,
+    "cmd_vel", custom_qos,
     std::bind(&RMSerialDriver::twistStampedEncodeCallback, this, std::placeholders::_1));
   RCLCPP_INFO(this->get_logger(), "WheelVelocityCalculator has started.");
 
