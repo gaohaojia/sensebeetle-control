@@ -39,9 +39,9 @@ RMSerialDriver::RMSerialDriver(const rclcpp::NodeOptions & options)
     "wheel_vel", custom_qos);
 
   // create subscriber
-  twist_sub_ = this->create_subscription<geometry_msgs::msg::TwistStamped>(
+  twist_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
     "cmd_vel", custom_qos,
-    std::bind(&RMSerialDriver::twistStampedEncodeCallback, this, std::placeholders::_1));
+    std::bind(&RMSerialDriver::TwistEncodeCallback, this, std::placeholders::_1));
   RCLCPP_INFO(this->get_logger(), "WheelVelocityCalculator has started.");
 
   wheelVel_sub_ = this->create_subscription<sensebeetle_interfaces::msg::TwistStampedToWheel>(
@@ -195,13 +195,13 @@ void RMSerialDriver::reopenPort()
   }
 }
 
-void RMSerialDriver::twistStampedEncodeCallback(
-  const geometry_msgs::msg::TwistStamped::SharedPtr msg)
+void RMSerialDriver::TwistEncodeCallback(
+  const geometry_msgs::msg::Twist::SharedPtr msg)
 {
   auto wheel_msg = std::make_shared<sensebeetle_interfaces::msg::TwistStampedToWheel>();
 
-  double vx = msg->twist.linear.x * 2, vy = msg->twist.linear.y * 2;
-  double omega = abs(msg->twist.angular.z) > 0.01 ? msg->twist.angular.z : 0;
+  double vx = msg->linear.x * 2, vy = -msg->linear.y * 2;
+  double omega = abs(msg->angular.z) > 0.01 ? msg->angular.z : 0;
 
   // 四个轮子的角度 (45, 135, 225, 315度转为弧度)
   std::array<double, 4> angles = {M_PI / 4, 3 * M_PI / 4, 5 * M_PI / 4, 7 * M_PI / 4};

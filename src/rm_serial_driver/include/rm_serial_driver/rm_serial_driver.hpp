@@ -48,7 +48,7 @@ private:
   void sendData(const sensebeetle_interfaces::msg::TwistStampedToWheel::SharedPtr msg);
 
   // encode
-  void twistStampedEncodeCallback(const geometry_msgs::msg::TwistStamped::SharedPtr msg);
+  void TwistEncodeCallback(const geometry_msgs::msg::Twist::SharedPtr msg);
 
   // remove null
   void removeZeros(std::vector<uint8_t> & data);
@@ -60,7 +60,7 @@ private:
   std::unique_ptr<drivers::serial_driver::SerialDriver> serial_driver_;
 
   // subscriber
-  rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr twist_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr twist_sub_;
   rclcpp::Subscription<sensebeetle_interfaces::msg::TwistStampedToWheel>::SharedPtr wheelVel_sub_;
 
   // publisher
